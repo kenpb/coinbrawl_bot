@@ -28,12 +28,12 @@ class BotLogic():
     def auth(self):
         """Logs into the site and sets the following attributes:
 
-        arena_token (str): A token embedded in the fighting UI, it's used as payload
-            when doing NPC and PVP related battles.
+            arena_token (str): A token embedded in the fighting UI, it's used as payload
+                when doing NPC and PVP related battles.
 
-        csrf_token (str): This token is different from the one used in the login screen
-            it's used in the request headers to avoid csrf attacks and it's also required to
-            do actual requests to the API since its validated by the server.
+            csrf_token (str): This token is different from the one used in the login screen
+                it's used in the request headers to avoid csrf attacks and it's also required to
+                do actual requests to the API since its validated by the server.
         """
         logger.info('Starting login process...')
         # the login endpoint uses an `authenticity_token` for it's request
@@ -68,11 +68,11 @@ class BotLogic():
     def get_stats(self):
         """Gets the stats for the current player and sets the following attributes:
 
-        friendly_stamina (number): The amount of stamina, a stat to battle NPCs if the stamina
-            is 0 we cannot fight NPCs.
+            friendly_stamina (number): The amount of stamina, a stat to battle NPCs if the stamina
+                is 0 we cannot fight NPCs.
 
-        friendly_tokens (number): Current amount of tokens, this are PVP tokens and allow to
-            engage another players, one token is consumed by battle.
+            friendly_tokens (number): Current amount of tokens, this are PVP tokens and allow to
+                engage another players, one token is consumed by battle.
         """
         # get the data from the API endpoint
         stats_json = self.encore.get(self.base_url + '/api/quick_stats').json()
@@ -88,7 +88,7 @@ class BotLogic():
         players LVL.
 
         Todo:
-            Just because the request went through it doesn't mean it was successful, handle this
+            * Just because the request went through it doesn't mean it was successful, handle this
 
         """
         # prepare the payload, the authenticity token here is the one we get after the login screen
@@ -100,3 +100,31 @@ class BotLogic():
         logger.debug('Sending request...')
         request = self.encore.post(self.base_url + '/character/regenerate_stamina', data=post_data)
         logger.info('The stamina has been reset successfully...')
+
+    def upgrade_stamina():
+        """
+        Todo:
+            * should check for /You have successfully upgraded your maximum stamina by 1\!/g
+        """
+        request = self.encore.get(self.base_url + '/upgrades/maximum_stamina', data=post_data)
+
+    def upgrade_tokens():
+        """
+        Todo:
+            * should check for /You have successfully upgraded your maximum tokens by 1\!/g
+        """
+        request = self.encore.get(self.base_url + '/upgrades/maximum_tokens', data=post_data)
+
+    def upgrade_attack():
+        """
+        Todo:
+            * should check for /You have successfully upgraded your attack\!/g
+        """
+        request = self.encore.get(self.base_url + '/upgrades/attack', data=post_data)
+
+    def upgrade_defense():
+        """
+        Todo:
+            * should check for /You have successfully upgraded your defense\!/g
+        """
+        request = self.encore.get(self.base_url + '/upgrades/defense', data=post_data)
