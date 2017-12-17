@@ -43,8 +43,8 @@ class Encore():
     def check_session(self, request, func, timeout=10):
         """Makes sure we are still logged.
         
-        Checks wether the redirection is to the login page in which case it runs a function until
-        it's not longer the case, sleeping 10 seconds every try.
+        Checks whether the `302` redirection is to `/users/sign_in`, in which case it will run a function until,
+        and resend the request until it's not longer the case, sleeping 10 seconds every retry.
 
         Args:
             request (object): A prepared request.
@@ -70,6 +70,7 @@ class Encore():
                         sleep(timeout)
                         continue
                     else:
+                        logger.info('Still logged...')
                         return response
 
     @retry(max_retries=100, timeout=15)
