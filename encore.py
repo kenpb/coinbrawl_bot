@@ -94,7 +94,7 @@ class Encore():
 
         # prepare the request add extra headers if any
         request = Request('GET', url, headers=headers)
-        prepared_request = request.prepare()
+        prepared_request = self.session.prepare_request(request)
         # our response object
         current_request = None
 
@@ -130,7 +130,7 @@ class Encore():
 
         # prepare the request add extra headers if any
         request = Request('POST', url, data=data, headers=headers)
-        prepared_request = request.prepare()
+        prepared_request = self.session.prepare_request(request)
         # our response object
         current_request = None
 
