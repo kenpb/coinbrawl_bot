@@ -20,7 +20,7 @@ class BotLogic():
         # initialize the HTTP class
         self.encore = Encore()
         # the site's url
-        self.base_url = 'https://www.coinbrawl.com'
+        self.base_url = self.encore.base_url
         # user credentials
         self.user = user
         self.password = password
@@ -37,11 +37,11 @@ class BotLogic():
         """
         logger.info('Starting login process...')
         # the login endpoint uses an `authenticity_token` for it's request
-        auth_token_regex = 'name="authenticity_token" type="hidden" value="(.*?)" \/>'
+        auth_token_regex = r'name="authenticity_token" type="hidden" value="(.*?)" \/>'
         # the arena token regex, grabs the token from the raw JS of the React app
-        arena_token_regex = 'battles: \[{"key":"(.*?)",'
+        arena_token_regex = r'battles: \[{"key":"(.*?)",'
         # the csrf token for the headers, embedded in the head and meta tags
-        csrf_token_regex = 'meta content="(.*?)" name="csrf-token"'
+        csrf_token_regex = r'meta content="(.*?)" name="csrf-token"'
         # do a request to get the login page
         logger.info('Requesting login page...')
         login_html = self.encore.get(self.base_url + '/users/sign_in').text
@@ -55,7 +55,7 @@ class BotLogic():
         auth_request = self.encore.post(self.base_url + '/users/sign_in', data=post_data)
         logger.info('Login succesufully...')
         # grab the current arena token from the response HTML (we should be logged by now)
-        logger.info('Grabbing  arena token...')
+        logger.info('Grabbing arena token...')
         self.arena_token = search(arena_token_regex, auth_request.text).group(1)
         logger.debug('Got %s...', self.arena_token)
         # grab the new csrf token from the meta tag
@@ -95,36 +95,75 @@ class BotLogic():
         # it's embedded in the meta of the HTML page
         logger.info('Reseting stamina...')
         logger.debug('Preparing post payload...')
+        # payload, the only weird thing is that utf8 check
         post_data = { 'utf8' : '✓', 'authenticity_token': self.csrf_token, 'commit': 'Submit' }
         # post the data to the endpoint
         logger.debug('Sending request...')
-        request = self.encore.post(self.base_url + '/character/regenerate_stamina', data=post_data)
+        # will relog if our session expired
+        request = self.encore.post(self.base_url + '/character/regenerate_stamina', data=post_data, check_session=True, func=self.auth)
         logger.info('The stamina has been reset successfully...')
 
-    def upgrade_stamina():
-        """
-        Todo:
-            * should check for /You have successfully upgraded your maximum stamina by 1\!/g
-        """
-        request = self.encore.get(self.base_url + '/upgrades/maximum_stamina', data=post_data)
+    def upgrade_stamina(self):
+        """Upgrades the defense points.
+        
+        Returns:
 
-    def upgrade_tokens():
+            
         """
-        Todo:
-            * should check for /You have successfully upgraded your maximum tokens by 1\!/g
-        """
-        request = self.encore.get(self.base_url + '/upgrades/maximum_tokens', data=post_data)
+        response = self.encore.get(self.base_url + '/upgrades/maximum_stamina')
+        success_regex = r'You have successfully upgraded your maximum stamina by 1\!'
+        print response.text
+        search(success_regex, response.text).group(1)
+        return response
 
-    def upgrade_attack():
-        """
-        Todo:
-            * should check for /You have successfully upgraded your attack\!/g
-        """
-        request = self.encore.get(self.base_url + '/upgrades/attack', data=post_data)
+    def upgrade_tokens(self):
+        """Upgrades the defense points.
+        
+        Returns:
 
-    def upgrade_defense():
+            
         """
-        Todo:
-            * should check for /You have successfully upgraded your defense\!/g
+        request = self.encore.get(self.base_url + '/upgrades/maximum_tokens')
+        success_regex = r'You have successfully upgraded your maximum tokens by 1\!'
+
+        search(success_regex, request.text).group(1)
+
+
+
+    def upgrade_attack(self):
+        """Upgrades the defense points.
+        
+        Returns:
+
+            
         """
-        request = self.encore.get(self.base_url + '/upgrades/defense', data=post_data)
+        request = self.encore.get(self.base_url + '/upgrades/attack')
+        success_regex = r'You have successfully upgraded your attack\!'
+
+
+
+    def upgrade_defense(self):
+        """Upgrades the defense points.
+        
+        Returns:
+
+
+        """
+        request = self.encore.get(self.base_url + '/upgrades/defense')
+        success_regex = r'You have successfully upgraded your defense\!'
+
+        search(success_regex, request.text).group(1)
+
+    def battle_players(self):
+        return
+
+    def battle_npc(self, id):
+        """Engages in battle with an NPC.
+
+        Args:
+            id (int): The number (according to list position) of the corresponding NPC to battle.
+        """
+        npc_ids = ['dummy', 'village_idiot', 'swordsman', 'wandering_wizard', 'black_knight', 'crystal_dragon']
+        post_data = { 'defender_id' : 'swordsman', 'token' : self.arena_token, 'stamina' : self.friendly_stamina }
+        npc_battle_request = self.session.post(self.base_url + '/battles/fight_npc', data=post_data)
+        #print npc_battle_request.json
