@@ -109,7 +109,7 @@ class BotLogic():
         # post the data to the endpoint
         logger.debug('Sending request...')
         # will relog if our session expired
-        response = self.encore.post(self.base_url + '/character/regenerate_stamina', data=post_data, check_session=True, func=self.auth)
+        response = self.encore.post(self.base_url + '/character/regenerate_stamina', data=post_data, check_session=False, func=self.auth)
         # this will be in the page if we got a successfull reset
         success_regex = r'Success\! You have gained more stamina\.'
         result = search(success_regex, response.text)
@@ -136,7 +136,7 @@ class BotLogic():
             
         """
         logger.info('Upgrading stamina...')
-        response = self.encore.get(self.base_url + '/upgrades/maximum_stamina', check_session=True, func=self.auth, allow_redirects=allow_redirects)
+        response = self.encore.get(self.base_url + '/upgrades/maximum_stamina', check_session=False, func=self.auth, allow_redirects=allow_redirects)
 
         if not allow_redirects:
             return { 'status': 'unknown', 'response': response }
@@ -305,5 +305,6 @@ class BotLogic():
 
         """
         npc_ids = ['dummy', 'village_idiot', 'swordsman', 'wandering_wizard', 'black_knight', 'crystal_dragon']
-        post_data = { 'defender_id' : npc_ids[id], 'token' : self.arena_token, 'stamina' : self.friendly_stamina }
+        logger.info('Farming NPC %s...', npc_ids[id])
+        post_data = { 'id' : npc_ids[id], 'token' : self.arena_token, 'stamina' : self.friendly_stamina }
         return self.encore.post(self.base_url + '/battles/fight_npc', data=post_data).json()
