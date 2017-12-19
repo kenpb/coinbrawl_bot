@@ -7,6 +7,7 @@ Provides all the logic for the routines and requests related to the bot.
 import logging
 from re import search, findall
 from json import loads
+from string import replace
 from encore import Encore
 
 logger = logging.getLogger(__name__)
@@ -83,6 +84,7 @@ class BotLogic():
         logger.info('Getting the current stats...')
         # get the data from the API endpoint
         stats_json = self.encore.get(self.base_url + '/api/quick_stats').json()
+        logger.debug(stats_json)
         # set the stats accordingly
         # the response looks like `current_amount/limit` being both, current amount and limit, numbers
         self.friendly_stamina = stats_json['friendly_stamina'].split('/')[1]
@@ -244,8 +246,46 @@ class BotLogic():
             logger.info('Could not upgrade defese something went wrong...')
             return { 'status': 'error', 'response': response }
 
-    def battle_players(self):
-        return
+    def battle_players(self, above_win_rate=False, win_rate=None):
+        """Engages in battle with another player.
+
+        Args:
+            above_win_rate (bool): only fight players that we have with certain amount of winning.
+            win_rate (int): if `above_win_rate` is True, this will be the minimun win_rate required to be challenged.
+
+        Returns:
+            `False` if there are no more tokens, True if everything (beside the fight results) went fine.
+
+        Todo:
+            * Should do more with the battle results
+
+        """
+        if (above_win_rate and win_rate == None):
+            raise ValueError('You must specify a win percentage if the `above_win_rate` flag is True')
+
+        available_battles = self.encore.get(self.base_url + '/api/available_battles').json()
+        logger.info('Fighting players...')
+        for battle in available_battles:
+            key = battle['key'] # current arena key, but lets grab it anyways lol
+            defender_username = battle['defender_username']
+            defender_id = battle['defender_id'] # our farm enemy id
+            defender_win_chance = replace(battle['percentage_chance'], '%', '')
+
+            #if (defender_win_chance <= 40) return // return if we have less than this chance of winning
+
+            post_data = { 'battle[defender_id]'	: defender_id, 'token' : key }
+            # post the data to the endpoint
+            logger.debug('Sending battle request...')
+            # will relog if our session expired
+            battle_result = self.encore.post(self.base_url + '/battles', data=post_data).json()
+
+            # should handle the win rate or something else here <--
+
+            # if we run out of tokens we should false the return here
+            if battle_result['message'] == 'Sorry, you are out of tokens! You can get more tokens on the \'Character\' page.':
+                return False
+
+        return True
 
     def battle_npc(self, id=0):
         """Engages in battle with an NPC.
@@ -259,10 +299,11 @@ class BotLogic():
                 4: `black_knight: 500/500`
                 5: `cyrstal_dragon: 1000/1000`
 
+        Returns:
+            The original JSON from the response containing `type` which indicates the status of the fight, and `message`
+            which gives a larger description (we care about it in the error cases at least)
+
         """
         npc_ids = ['dummy', 'village_idiot', 'swordsman', 'wandering_wizard', 'black_knight', 'crystal_dragon']
         post_data = { 'defender_id' : npc_ids[id], 'token' : self.arena_token, 'stamina' : self.friendly_stamina }
-        response = self.encore.post(self.base_url + '/battles/fight_npc', data=post_data, )
-        result = response.json
-
-        #print npc_battle_request.json
+        return self.encore.post(self.base_url + '/battles/fight_npc', data=post_data).json()
