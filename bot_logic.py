@@ -167,7 +167,7 @@ class BotLogic():
                 `fail`: There was an error, most certainly not enough gold.
             
         """
-        request = self.encore.get(self.base_url + '/upgrades/maximum_tokens')
+        response = self.encore.get(self.base_url + '/upgrades/maximum_tokens')
 
         if not allow_redirects:
             return { 'status': 'unknown', 'response': response }
@@ -199,7 +199,7 @@ class BotLogic():
                 `fail`: There was an error, most certainly not enough gold.
             
         """
-        request = self.encore.get(self.base_url + '/upgrades/attack')
+        response = self.encore.get(self.base_url + '/upgrades/attack')
 
         if not allow_redirects:
             return { 'status': 'unknown', 'response': response }
@@ -230,7 +230,7 @@ class BotLogic():
                 `fail`: There was an error, most certainly not enough gold.
 
         """
-        request = self.encore.get(self.base_url + '/upgrades/defense')
+        response = self.encore.get(self.base_url + '/upgrades/defense')
 
         if not allow_redirects:
             return { 'status': 'unknown', 'response': response }
