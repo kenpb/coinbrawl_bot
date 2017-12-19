@@ -74,7 +74,7 @@ class Encore():
                         return response
 
     @retry(max_retries=100, timeout=15)
-    def get(self, url, headers={}, check_session=False, func=None):
+    def get(self, url, headers={}, check_session=False, func=None, allow_redirects=True):
         """A simple GET request.
 
         Args:
@@ -105,7 +105,7 @@ class Encore():
             current_request = self.check_session(prepared_request, func)
         else:
             # else we will simply do the request as usual
-            current_request = self.session.send(prepared_request)
+            current_request = self.session.send(prepared_request, allow_redirects=allow_redirects)
 
         # throw on 404, 500 and other common HTTP errors
         current_request.raise_for_status()
@@ -113,7 +113,7 @@ class Encore():
         return current_request
 
     @retry(max_retries=100, timeout=15)
-    def post(self, url, data={}, headers={}, check_session=False, func=None):
+    def post(self, url, data={}, headers={}, check_session=False, func=None, allow_redirects=True):
         """A simple POST request.
 
         Args:
@@ -141,7 +141,7 @@ class Encore():
             current_request = self.check_session(prepared_request, func)
         else:
             # else we will simply do the request as usual
-            current_request = self.session.send(prepared_request)
+            current_request = self.session.send(prepared_request, allow_redirects=allow_redirects)
 
         # throw on 404, 500 and other common HTTP errors
         current_request.raise_for_status()

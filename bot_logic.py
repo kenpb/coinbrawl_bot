@@ -34,6 +34,7 @@ class BotLogic():
             csrf_token (str): This token is different from the one used in the login screen
                 it's used in the request headers to avoid csrf attacks and it's also required to
                 do actual requests to the API since its validated by the server.
+
         """
         logger.info('Starting login process...')
         # the login endpoint uses an `authenticity_token` for it's request
@@ -73,13 +74,20 @@ class BotLogic():
 
             friendly_tokens (number): Current amount of tokens, this are PVP tokens and allow to
                 engage another players, one token is consumed by battle.
+
+            Note:
+                Must be run once every cycle since the attributes above are necessary for the upgrade
+                and farm functions.
+
         """
+        logger.info('Getting the current stats...')
         # get the data from the API endpoint
         stats_json = self.encore.get(self.base_url + '/api/quick_stats').json()
         # set the stats accordingly
         # the response looks like `current_amount/limit` being both, current amount and limit, numbers
         self.friendly_stamina = stats_json['friendly_stamina'].split('/')[1]
         self.friendly_tokens = stats_json['friendly_tokens'].split('/')[1]
+        self.gold = stats_json['gold']
 
     def reset_stamina(self):
         """Resets the current player stamina so we can engage again.
@@ -91,79 +99,170 @@ class BotLogic():
             * Just because the request went through it doesn't mean it was successful, handle this
 
         """
-        # prepare the payload, the authenticity token here is the one we get after the login screen
-        # it's embedded in the meta of the HTML page
         logger.info('Reseting stamina...')
         logger.debug('Preparing post payload...')
-        # payload, the only weird thing is that utf8 check
+        # prepare the payload, the authenticity token here is the one we get after the login screen
+        # it's embedded in the meta of the HTML page
         post_data = { 'utf8' : '✓', 'authenticity_token': self.csrf_token, 'commit': 'Submit' }
         # post the data to the endpoint
         logger.debug('Sending request...')
         # will relog if our session expired
-        request = self.encore.post(self.base_url + '/character/regenerate_stamina', data=post_data, check_session=True, func=self.auth)
-        logger.info('The stamina has been reset successfully...')
+        response = self.encore.post(self.base_url + '/character/regenerate_stamina', data=post_data, check_session=True, func=self.auth)
+        # this will be in the page if we got a successfull reset
+        success_regex = r'Success\! You have gained more stamina\.'
+        result = search(success_regex, response.text)
 
-    def upgrade_stamina(self):
+        if result is not None and result.group(0) is not None:
+            logger.info('The stamina has been reset successfully...')
+            return { 'status': 'success', 'response': response }
+        else:
+            logger.info('Could not reset stamina something went wrong...')
+            return { 'status': 'error', 'response': response }
+
+    def upgrade_stamina(self, allow_redirects=True):
         """Upgrades the defense points.
         
-        Returns:
+        Args:
+            allow_redirects (bool): if false it will not redirect or get the status of the action but will save a request
+                may be useful when we are just upgrading non-stoping.
 
+        Returns:
+            Returns a dictionary with the status and the response object:
+                `success`: Will mean everything went fine and the upgraded was successful.
+                `unknown`: `allow_redirects` is `False` and our action result is unknown.
+                `fail`: There was an error, most certainly not enough gold.
             
         """
-        response = self.encore.get(self.base_url + '/upgrades/maximum_stamina')
-        success_regex = r'You have successfully upgraded your maximum stamina by 1\!'
-        print response.text
-        search(success_regex, response.text).group(1)
-        return response
+        logger.info('Upgrading stamina...')
+        response = self.encore.get(self.base_url + '/upgrades/maximum_stamina', check_session=True, func=self.auth, allow_redirects=allow_redirects)
 
-    def upgrade_tokens(self):
+        if not allow_redirects:
+            return { 'status': 'unknown', 'response': response }
+
+        success_regex = r'You have successfully upgraded your maximum stamina by 1\!'
+
+        result = search(success_regex, response.text)
+
+        if result is not None and result.group(0) is not None:
+            logger.info('The stamina has been upgraded successfully...')
+            return { 'status': 'success', 'response': response }
+        else:
+            logger.info('Could not upgrade stamina, something went wrong...')
+            return { 'status': 'error', 'response': response }
+
+
+    def upgrade_tokens(self, allow_redirects=True):
         """Upgrades the defense points.
         
-        Returns:
+        Args:
+            allow_redirects (bool): if false it will not redirect or get the status of the action but will save a request
+                may be useful when we are just upgrading non-stoping.
 
+        Returns:
+            Returns a dictionary with the status and the response object:
+                `success`: Will mean everything went fine and the upgraded was successful.
+                `unknown`: `allow_redirects` is `False` and our action result is unknown.
+                `fail`: There was an error, most certainly not enough gold.
             
         """
         request = self.encore.get(self.base_url + '/upgrades/maximum_tokens')
+
+        if not allow_redirects:
+            return { 'status': 'unknown', 'response': response }
+
         success_regex = r'You have successfully upgraded your maximum tokens by 1\!'
 
-        search(success_regex, request.text).group(1)
+        result = search(success_regex, response.text)
+
+        if result is not None and result.group(0) is not None:
+            logger.info('The tokens has been upgraded successfully...')
+            return { 'status': 'success', 'response': response }
+        else:
+            logger.info('Could not upgrade tokens, something went wrong...')
+            return { 'status': 'error', 'response': response }
 
 
 
-    def upgrade_attack(self):
+    def upgrade_attack(self, allow_redirects=True):
         """Upgrades the defense points.
         
-        Returns:
+        Args:
+            allow_redirects (bool): if false it will not redirect or get the status of the action but will save a request
+                may be useful when we are just upgrading non-stoping.
 
+        Returns:
+            Returns a dictionary with the status and the response object:
+                `success`: Will mean everything went fine and the upgraded was successful.
+                `unknown`: `allow_redirects` is `False` and our action result is unknown.
+                `fail`: There was an error, most certainly not enough gold.
             
         """
         request = self.encore.get(self.base_url + '/upgrades/attack')
+
+        if not allow_redirects:
+            return { 'status': 'unknown', 'response': response }
+
         success_regex = r'You have successfully upgraded your attack\!'
 
+        result = search(success_regex, response.text)
+
+        if result is not None and result.group(0) is not None:
+            logger.info('The attack has been upgraded successfully...')
+            return { 'status': 'success', 'response': response }
+        else:
+            logger.info('Could not upgrade attack something went wrong...')
+            return { 'status': 'error', 'response': response }
 
 
-    def upgrade_defense(self):
+    def upgrade_defense(self, allow_redirects=True):
         """Upgrades the defense points.
         
-        Returns:
+        Args:
+            allow_redirects (bool): if false it will not redirect or get the status of the action but will save a request
+                may be useful when we are just upgrading non-stoping.
 
+        Returns:
+            Returns a dictionary with the status and the response object:
+                `success`: Will mean everything went fine and the upgraded was successful.
+                `unknown`: `allow_redirects` is `False` and our action result is unknown.
+                `fail`: There was an error, most certainly not enough gold.
 
         """
         request = self.encore.get(self.base_url + '/upgrades/defense')
+
+        if not allow_redirects:
+            return { 'status': 'unknown', 'response': response }
+
         success_regex = r'You have successfully upgraded your defense\!'
 
-        search(success_regex, request.text).group(1)
+        result = search(success_regex, response.text)
+
+        if result is not None and result.group(0) is not None:
+            logger.info('The defense has been upgraded successfully...')
+            return { 'status': 'success', 'response': response }
+        else:
+            logger.info('Could not upgrade defese something went wrong...')
+            return { 'status': 'error', 'response': response }
 
     def battle_players(self):
         return
 
-    def battle_npc(self, id):
+    def battle_npc(self, id=0):
         """Engages in battle with an NPC.
 
         Args:
-            id (int): The number (according to list position) of the corresponding NPC to battle.
+            id (int): The number (according to list position) of the corresponding NPC to battle, as in:
+                0: `dummy: 0/0`
+                1: `village_idiot: 10/10`
+                2: `swordsman: 20/20` 
+                3: `wandering_wizzard: 250/250`
+                4: `black_knight: 500/500`
+                5: `cyrstal_dragon: 1000/1000`
+
         """
         npc_ids = ['dummy', 'village_idiot', 'swordsman', 'wandering_wizard', 'black_knight', 'crystal_dragon']
-        post_data = { 'defender_id' : 'swordsman', 'token' : self.arena_token, 'stamina' : self.friendly_stamina }
-        npc_battle_request = self.session.post(self.base_url + '/battles/fight_npc', data=post_data)
+        post_data = { 'defender_id' : npc_ids[id], 'token' : self.arena_token, 'stamina' : self.friendly_stamina }
+        response = self.encore.post(self.base_url + '/battles/fight_npc', data=post_data, )
+        result = response.json
+
         #print npc_battle_request.json
