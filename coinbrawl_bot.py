@@ -2,8 +2,7 @@
 #!/usr/bin/env python3
 """CoinBrawl Bot.
 
-A Bot to farm https://www.coinbrawl.com/ a bitcoin faucet, knowing the site doesn't
-pay I don't feel bad anymore.
+A Bot to farm https://www.coinbrawl.com/ a bitcoin faucet.
 """
 __version__ = '0.0.1'
 
@@ -16,6 +15,8 @@ from time import sleep
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+npc_id = 0
 
 def usage():
     print 'Usage: python ./coinbrawl_bot.py -h, --help | -f, --farm-stats <stamina | tokens | attack | defense> | -p, --pvp <win_percentage>'
@@ -44,6 +45,8 @@ def setup_robot():
     # Get the credentials from the config file
     user = config.get('Credentials', 'user')
     password = config.get('Credentials', 'password')
+    global npc_id
+    npc_id = config.get('NPC', 'id')
 
     coinBrawl = BotLogic(user, password)
     coinBrawl.auth()
@@ -51,7 +54,7 @@ def setup_robot():
     return coinBrawl
 
 def main():
-    """Our main entry for the bot, atm, this is just a test.
+    """Our main entry for the bot.
 
     Todo:
         * Farming routines should be handled differently
@@ -90,9 +93,7 @@ def main():
                     sleep(5)
 
                 # farm our target NPC
-                # Todo:
-                #   * Should be configurable
-                battle_result = coinBrawl.battle_npc(5)
+                battle_result = coinBrawl.battle_npc(int(npc_id))
                 logger.info(battle_result['message'])
                 if battle_result['type'] == 'success':
                     while True:
@@ -120,7 +121,7 @@ def main():
                     sleep(5/10)
         elif option in ('-p', '--pvp'):
             # setup the bot instance
-            coinBrawl = setup_robot()
+            CoinBrawl = setup_robot()
             # Todo:
             #   * The argument is not optional by default (getopt)
             if arg is not None: above_win_rate = True
