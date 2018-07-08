@@ -117,6 +117,9 @@ def main():
                             if coinBrawl.upgrade_defense()['status'] is not 'success':
                                 # we didn't
                                 break
+                        if arg == 'gold':
+                            # do nothing. cuz, its just loops away
+                            break
                     # wait 500ms between calls
                     sleep(5/10)
         elif option in ('-p', '--pvp'):
