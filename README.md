@@ -4,7 +4,7 @@ This is a bot to farm the [Coinbraw Bitcoin faucet](https://coinbrawl.com), it h
 
 ## Warning
 
-#### This may get you banned, user discretion advised!
+#### This ~~may~~ will get you banned, user discretion advised!
 
 ### Usage
 
